@@ -242,30 +242,39 @@ def run_pathfinding(start_address, end_address, location):
     # Plot the paths on the GeoPandas plot
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    # Plot street network edges
-    gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
+    # Set background color to black
+    ax.set_facecolor('black')
 
-    # Plot start and end nodes - green starting point, blue ending point
-    gdf_nodes.loc[[start_node, end_node]].plot(ax=ax, color=['green', 'blue'], markersize=50)
+    # Plot street network edges
+    gdf_edges.plot(ax=ax, color='dimgray', linewidth=1)
+
+    # Plot start and end nodes with distinct colors
+    gdf_nodes.loc[[start_node]].plot(ax=ax, color='lime', markersize=100, zorder=3)  # start node
+    gdf_nodes.loc[[end_node]].plot(ax=ax, color='red', markersize=100, zorder=3)  # end node
 
     # Plot A* path
     astar_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in astar_path])
     gdf_astar_path = gpd.GeoDataFrame(geometry=[astar_line])
-    gdf_astar_path.plot(ax=ax, color='red', linewidth=2, linestyle='dashed', label=f'A* Path (Runtime: {astar_runtime:.4f} seconds)')
+    gdf_astar_path.plot(ax=ax, color='yellow', linewidth=4, linestyle='-', label=f'A* Path (Runtime: {astar_runtime:.4f} seconds)')
 
     # Plot Dijkstra's path
     dijkstra_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in dijkstra_path])
     gdf_dijkstra_path = gpd.GeoDataFrame(geometry=[dijkstra_line])
-    gdf_dijkstra_path.plot(ax=ax, color='blue', linewidth=2, linestyle='dashed', label=f"Dijkstra's Path (Runtime: {dijkstra_runtime:.4f} seconds)")
+    gdf_dijkstra_path.plot(ax=ax, color='cyan', linewidth=2, linestyle='-', label=f"Dijkstra's Path (Runtime: {dijkstra_runtime:.4f} seconds)")
 
-    # Set plot title and legend
-    plt.title('Street Network with Paths \n Start: ' + start_address + '\n Destination:' + end_address)
-    plt.legend()
+    # Set plot title, legend, and adjust the text color for visibility
+    plt.title('Street Network without Weights \n Start: ' + start_address + '\n Destination:' + end_address, color='black')
+    plt.legend(facecolor='black', edgecolor='white', labelcolor = 'white', framealpha=1, fontsize='medium')
+    plt.xticks(color='black')
+    plt.yticks(color='black')
 
     # Display the plot
-    # plt.show()
+    plt.show()
 
-    plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/map_with_both_paths_lineMap.png')
+    Save the plot
+    plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/visualMaps/bothPaths_lineMap.png', facecolor=fig.get_facecolor())
+
+
 
 # Main function
 def main():
@@ -273,7 +282,7 @@ def main():
     end_address = "AMC, Arlington, Virginia"
     location = "Arlington, Virginia"
 
-    # long_running_operation(progress)
+    long_running_operation(progress)
 
     run_pathfinding(start_address, end_address, location)
 

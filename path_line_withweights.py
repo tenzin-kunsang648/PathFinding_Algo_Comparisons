@@ -166,7 +166,7 @@ def run_dijkstra(graph, start_node, end_node, weight_distance, weight_time):
     end_time = time.time()
     runtime = end_time - start_time
     if route_dijkstra:
-        distance,traveltime, avgspeed   = calculate_path_distance_time(graph, route_dijkstra)
+        distance,traveltime, avgspeed = calculate_path_distance_time(graph, route_dijkstra)
     else:
         distance = 0
         traveltime = 0
@@ -213,6 +213,8 @@ def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time
     print("A* results (Distance, Time, Avg Speed, Runtime):      ", astar_result[2], astar_result[3],astar_result[4], astar_result[1])
     print("Dijkstra results (Distance, Time, Avg Speed, Runtime):", dijkstra_result[2], dijkstra_result[3],astar_result[4],dijkstra_result[1])
 
+    return astar_result[0], dijkstra_result[0], astar_result[1], dijkstra_result[1]
+
 # Function to execute pathfinding and comparison
 def execute_pathfinding(location, start_address, end_address):
     street_graph = get_street_network(location)
@@ -224,7 +226,49 @@ def execute_pathfinding(location, start_address, end_address):
 
     for weight_distance, weight_time in weights:
         print(f"Comparing algorithms with weights - Distance: {weight_distance}, Time: {weight_time}")
-        compare_algorithms(street_graph, start_node, end_node, weight_distance, weight_time)
+        astar_path, dijkstra_path, astar_runtime, dijkstra_runtime = compare_algorithms(street_graph, start_node, end_node, weight_distance, weight_time)
+
+        # Plot the street network using GeoPandas
+        gdf_edges = ox.graph_to_gdfs(street_graph, nodes=False, edges=True)
+        gdf_nodes = ox.graph_to_gdfs(street_graph, nodes=True, edges=False)
+
+        # Plot the paths on the GeoPandas plot
+        fig, ax = plt.subplots(figsize=(10, 10))
+
+        # Set background color to black
+        ax.set_facecolor('black')
+
+        # Plot street network edges
+        gdf_edges.plot(ax=ax, color='dimgray', linewidth=1)
+
+        # Plot start and end nodes with distinct colors
+        gdf_nodes.loc[[start_node]].plot(ax=ax, color='lime', markersize=100, zorder=3)  # start node
+        gdf_nodes.loc[[end_node]].plot(ax=ax, color='red', markersize=100, zorder=3)  # end node
+
+        # Plot A* path
+        astar_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in astar_path])
+        gdf_astar_path = gpd.GeoDataFrame(geometry=[astar_line])
+        gdf_astar_path.plot(ax=ax, color='yellow', linewidth=4, linestyle='-', label=f'A* Path (Runtime: {astar_runtime:.4f} seconds)')
+
+        # Plot Dijkstra's path
+        dijkstra_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in dijkstra_path])
+        gdf_dijkstra_path = gpd.GeoDataFrame(geometry=[dijkstra_line])
+        gdf_dijkstra_path.plot(ax=ax, color='cyan', linewidth=2, linestyle='-', label=f"Dijkstra's Path (Runtime: {dijkstra_runtime:.4f} seconds)")
+
+        # Set plot title, legend, and adjust the text color for visibility
+        plt.title('Street Network with Weights: (dist_weight, time_weight) = (' + str(weight_distance) + ', ' + str(weight_time) + 
+        ')\n Start: ' + start_address + '\n Destination:' + end_address, color='black')
+        plt.legend(facecolor='black', edgecolor='white', labelcolor = 'white', framealpha=1, fontsize='medium')
+        plt.xticks(color='black')
+        plt.yticks(color='black')
+
+        # Display the plot
+        plt.show()
+
+        # Save the plot
+        # plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/visualMaps/bothPaths_lineMap.png', facecolor=fig.get_facecolor())
+
+    
 
 # Run the main execution
 if __name__ == "__main__":
