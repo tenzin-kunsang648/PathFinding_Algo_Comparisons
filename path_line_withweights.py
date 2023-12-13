@@ -20,13 +20,16 @@ def nearest_node(graph, coordinates):
     return ox.distance.nearest_nodes(graph, coordinates[1], coordinates[0])
 
 # Add weights for distance and time as parameters
-def heuristic_cost_estimate(graph, current, goal, weight_distance, weight_time, average_speed_mph=50):
+def heuristic_cost_estimate(graph, current, goal, weight_distance, weight_time, max_speed):
     distance = ox.distance.great_circle(
         graph.nodes[current]['y'], graph.nodes[current]['x'],
         graph.nodes[goal]['y'], graph.nodes[goal]['x']
     )
-    distance_miles = distance * 3963 # Convert earth_radius to miles
-    travel_time = (distance_miles / average_speed_mph) * 60 # in minutes
+    distance_miles = distance * 0.62137 # Convert earth_radius to miles
+    travel_time = (distance_miles / max_speed) * 60 # in minutes
+    # print('#### travel time ', travel_time)
+    # print('#### distance_miles ', distance_miles)
+
     return (weight_distance * distance_miles) + (weight_time * travel_time)
 
 
@@ -43,7 +46,9 @@ def astar(graph, start, end, weight_distance, weight_time):
     g_score[start] = 0 #initialize the g_score of the start node to 0 
     # Dictionary to store the estimated total cost from start to goal
     f_score = {node: float('inf') for node in graph.nodes} #initialize the f_score of all the nodes (except the first node) to infinity
-    f_score[start] = heuristic_cost_estimate(graph, start, end, weight_distance, weight_time) #initialize the f_score of the start node to the heuristic estimate from start to end node
+    # initialize the f_score of the start node to the heuristic estimate from start to end node
+    # initialize speed to 45 mph for the initial node's f_score
+    f_score[start] = heuristic_cost_estimate(graph, start, end, weight_distance, weight_time, 45) 
 
     # Push start node to the priority queue
     heapq.heappush(open_set, (f_score[start], start))
@@ -65,14 +70,18 @@ def astar(graph, start, end, weight_distance, weight_time):
             if neighbor in closed_set:
                 continue
 
-            tentative_g_score = g_score[current] + graph.get_edge_data(current, neighbor).get('length', 1)
+            edge_data = graph.get_edge_data(current, neighbor)[0]
+            tentative_g_score = g_score[current] + edge_data['length']
 
             if tentative_g_score < g_score[neighbor]:
                 came_from_astar[neighbor] = current
                 g_score[neighbor] = tentative_g_score
-                f_score[neighbor] = tentative_g_score + heuristic_cost_estimate(graph, neighbor, end, weight_distance, weight_time)
+                max_speed = edge_data.get('maxspeed', '45 mph')
+                if isinstance(max_speed, list):
+                    max_speed = max_speed[0]
+                max_speed_int = int(max_speed.split()[0])
+                f_score[neighbor] = tentative_g_score + heuristic_cost_estimate(graph, neighbor, end, weight_distance, weight_time, max_speed_int)
                 heapq.heappush(open_set, (f_score[neighbor], neighbor))
-
     return None
 
 # Dijkstra's algorithm implementation with time and distance weights
@@ -109,9 +118,19 @@ def dijkstra(graph, start, end, time_weight, distance_weight):
                 continue
 
             # Get edge data
-            edge_data = graph.get_edge_data(current_node, neighbor)
-            time_cost = edge_data.get('time', 1)
+            edge_data = graph.get_edge_data(current_node, neighbor)[0]
+
+            # Get distance from edge data
             distance_cost = edge_data.get('distance', 1)
+            
+            # Get speed from edge data
+            max_speed = edge_data.get('maxspeed', '45 mph')
+            if isinstance(max_speed, list):
+                max_speed = max_speed[0]
+            max_speed_int = int(max_speed.split()[0])
+
+            # Calculate time from distance and speed
+            time_cost = distance_cost / max_speed_int
 
             # Calculate weighted cost
             weighted_cost = time_weight * time_cost + distance_weight * distance_cost
@@ -164,12 +183,12 @@ def calculate_path_distance_time(graph, path):
     for i in range(len(path) - 1):
         node1 = path[i]
         node2 = path[i + 1]
-        edge_data = graph.get_edge_data(node1, node2)
+        edge_data = graph.get_edge_data(node1, node2)[0]
         # print(f"\nNode 1 :" + str(node1) + " ||||| Node 2: " + str(node2) + "||||| edge data: " + str(edge_data))
-        total_distance_meters += edge_data[0]['length']
+        total_distance_meters += edge_data['length']
         
         # default to 45 mph if maxspeed is not provided
-        speed_str = edge_data[0].get('maxspeed', '45 mph')
+        speed_str = edge_data.get('maxspeed', '45 mph')
         # Check if speed_str is a list, and if so, take the first element
         if isinstance(speed_str, list):
             speed_str = speed_str[0]
@@ -185,14 +204,6 @@ def calculate_path_distance_time(graph, path):
     total_time = total_distance_miles / avg_speed * 60
 
     return total_distance_miles, total_time, avg_speed
-
-# Function to estimate travel time given distance and average speed (constant variable)
-def estimate_travel_time(distance_miles, average_speed_mph=50):
-    # Time = Distance / Speed, time in hours
-    time_hours = distance_miles / average_speed_mph
-    
-    # Convert hours to minutes (1 hour = 60 minutes)
-    return time_hours * 60
 
 # Function to compare algorithms
 def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time):

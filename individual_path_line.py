@@ -149,11 +149,13 @@ def calculate_path_distance_time(graph, path):
     for i in range(len(path) - 1):
         node1 = path[i]
         node2 = path[i + 1]
-        edge_data = graph.get_edge_data(node1, node2)
+        edge_data = graph.get_edge_data(node1, node2)[0]
         # print(f"\nNode 1 :" + str(node1) + " ||||| Node 2: " + str(node2) + "||||| edge data: " + str(edge_data))
-        total_distance_meters += edge_data[0]['length']
+        total_distance_meters += edge_data['length']
         
-        speed_str = edge_data[0].get('maxspeed', '45 mph')
+        speed_str = edge_data.get('maxspeed', '45 mph')
+        if isinstance(speed_str, list):
+            speed_str = speed_str[0]
         speed_int = int(speed_str.split()[0])
         # print('SPEED INT -> ', speed_int)
         # edge data's max speed is in mph
@@ -166,14 +168,6 @@ def calculate_path_distance_time(graph, path):
     total_time = total_distance_miles / avg_speed * 60
 
     return total_distance_miles, total_time, avg_speed
-
-# Function to estimate travel time given distance and average speed (constant variable)
-def estimate_travel_time(distance_miles, average_speed_mph=50):
-    # Time = Distance / Speed, time in hours
-    time_hours = distance_miles / average_speed_mph
-    
-    # Convert hours to minutes (1 hour = 60 minutes)
-    return time_hours * 60
 
 # Function to print all
 def print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed):
