@@ -1,0 +1,46 @@
+start_location,end_location,distance_miles
+"New York, NY","Washington, DC",225
+"New York, NY","Boston, MA",215
+"New York, NY","Baltimore, MD",190
+"New York, NY","Philadelphia, PA",95
+"New York, NY","Atlanta, GA",745
+"New York, NY","Miami, FL",1305
+"New York, NY","Charlotte, NC",635
+"New York, NY","Raleigh, NC",650
+"New York, NY","Jacksonville, FL",885
+"Washington, DC","Boston, MA",410
+"Washington, DC","Baltimore, MD",35
+"Washington, DC","Philadelphia, PA",225
+"Washington, DC","Atlanta, GA",635
+"Washington, DC","Miami, FL",1090
+"Washington, DC","Charlotte, NC",370
+"Washington, DC","Raleigh, NC",395
+"Washington, DC","Jacksonville, FL",665
+"Boston, MA","Baltimore, MD",365
+"Boston, MA","Philadelphia, PA",215
+"Boston, MA","Atlanta, GA",1005
+"Boston, MA","Miami, FL",1260
+"Boston, MA","Charlotte, NC",860
+"Boston, MA","Raleigh, NC",890
+"Boston, MA","Jacksonville, FL",1200
+"Baltimore, MD","Philadelphia, PA",190
+"Baltimore, MD","Atlanta, GA",650
+"Baltimore, MD","Miami, FL",1110
+"Baltimore, MD","Charlotte, NC",390
+"Baltimore, MD","Raleigh, NC",415
+"Baltimore, MD","Jacksonville, FL",685
+"Philadelphia, PA","Atlanta, GA",655
+"Philadelphia, PA","Miami, FL",1075
+"Philadelphia, PA","Charlotte, NC",410
+"Philadelphia, PA","Raleigh, NC",425
+"Philadelphia, PA","Jacksonville, FL",665
+"Atlanta, GA","Miami, FL",660
+"Atlanta, GA","Charlotte, NC",440
+"Atlanta, GA","Raleigh, NC",430
+"Atlanta, GA","Jacksonville, FL",330
+"Miami, FL","Charlotte, NC",810
+"Miami, FL","Raleigh, NC",800
+"Miami, FL","Jacksonville, FL",495
+"Charlotte, NC","Raleigh, NC",30
+"Charlotte, NC","Jacksonville, FL",655
+"Raleigh, NC","Jacksonville, FL",685
