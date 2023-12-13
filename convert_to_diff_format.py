@@ -43,7 +43,7 @@ for i, origin in enumerate(cities):
             data['distance_miles'].append(dist_matrix[i][j])
 
 data_df = pd.DataFrame(data)
-file_path = '/Users/kunsang/Desktop/5800algorithm/final/distance_eastcoast.csv'
+file_path = 'distance_eastcoast.csv'
 data_df.to_csv(file_path, index=False)
 print(data_df)
 
