@@ -14,6 +14,10 @@ def get_street_network(location):
     G = ox.graph_from_place(location, network_type="drive")
     return G
 
+def get_street_network_from_address(address):
+    G = ox.graph_from_address(address, dist=100000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
+    return G
+
 # Function to find the nearest network node
 def nearest_node(graph, coordinates):
     return ox.distance.nearest_nodes(graph, coordinates[1], coordinates[0])
@@ -171,17 +175,17 @@ def calculate_path_distance_time(graph, path):
 
 # Function to print all
 def print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed):
-    # Print coordinates of A* path
-    print("\nA* Path Coordinates:")
-    print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
+    # # Print coordinates of A* path
+    # print("\nA* Path Coordinates:")
+    # print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
 
-    # Print coordinates of Dijkstra's path
-    print("\nDijkstra's Path Coordinates:")
-    print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
+    # # Print coordinates of Dijkstra's path
+    # print("\nDijkstra's Path Coordinates:")
+    # print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
 
-    # Print start and end coordinates
-    print("\nStart Coordinates:", start_node)
-    print("End Coordinates:", end_node)
+    # # Print start and end coordinates
+    # print("\nStart Coordinates:", start_node)
+    # print("End Coordinates:", end_node)
 
     # Print A* algorithm runtime
     print(f"\nA* Algorithm Runtime: {astar_runtime:.4f} seconds")
@@ -220,7 +224,8 @@ def progress(percent):
 # Function to run the pathfinding process
 def run_pathfinding(start_address, end_address, location):
 
-    street_graph = get_street_network(location)
+    # street_graph = get_street_network(location)
+    street_graph = get_street_network_from_address(location)
 
     # Convert the addresses to the nearest nodes in the network
     start_node = nearest_node(street_graph, ox.geocode(start_address))
@@ -235,47 +240,46 @@ def run_pathfinding(start_address, end_address, location):
     # Print all
     print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed)
 
-   # Plot the street network using GeoPandas
-    gdf_edges = ox.graph_to_gdfs(street_graph, nodes=False, edges=True)
-    gdf_nodes = ox.graph_to_gdfs(street_graph, nodes=True, edges=False)
+    # Create a Folium map centered around the starting point
+    map_center = [street_graph.nodes[start_node]['y'], street_graph.nodes[start_node]['x']]
+    mymap = folium.Map(location=map_center, zoom_start=15)
 
-    # Plot the paths on the GeoPandas plot
-    fig, ax = plt.subplots(figsize=(10, 10))
+    # Plot the street network on the Folium map
+    folium.TileLayer('cartodb positron').add_to(mymap)
+    ox.plot_graph_folium(street_graph, folium_map=mymap, popup_attribute='name')
 
-    # Plot street network edges
-    gdf_edges.plot(ax=ax, color='lightgray', linewidth=0.5)
+    # Plot the A* path on the Folium map
+    folium.PolyLine(locations=[(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path], 
+                    color="red", weight=12, opacity=1, popup=f"A* Path (Runtime: {astar_runtime:.4f} seconds)").add_to(mymap)
 
-    # Plot start and end nodes with distinct colors
-    gdf_nodes.loc[[start_node]].plot(ax=ax, color='green', markersize=100, zorder=3)  # start node
-    gdf_nodes.loc[[end_node]].plot(ax=ax, color='red', markersize=100, zorder=3)  # end node
+    # Plot the Dijkstra's path on the Folium map
+    folium.PolyLine(locations=[(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path], 
+                    color="blue", weight=6, opacity=0.9, popup=f"Dijkstra's Path (Runtime: {dijkstra_runtime:.4f} seconds)").add_to(mymap)
 
-    # Plot A* path
-    astar_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in astar_path])
-    gdf_astar_path = gpd.GeoDataFrame(geometry=[astar_line])
-    gdf_astar_path.plot(ax=ax, color='yellow', linewidth=4, linestyle='dashed', label=f'A* Path (Runtime: {astar_runtime:.4f} seconds)')
+    # Add markers for start and end points
+    folium.Marker([street_graph.nodes[start_node]['y'], street_graph.nodes[start_node]['x']], popup=start_address, icon=folium.Icon(color='green')).add_to(mymap)
+    folium.Marker([street_graph.nodes[end_node]['y'], street_graph.nodes[end_node]['x']], popup=end_address, icon=folium.Icon(color='red')).add_to(mymap)
 
-    # Plot Dijkstra's path
-    dijkstra_line = LineString([(street_graph.nodes[node]['x'], street_graph.nodes[node]['y']) for node in dijkstra_path])
-    gdf_dijkstra_path = gpd.GeoDataFrame(geometry=[dijkstra_line])
-    gdf_dijkstra_path.plot(ax=ax, color='purple', linewidth=2, linestyle='dashed', label=f"Dijkstra's Path (Runtime: {dijkstra_runtime:.4f} seconds)")
-
-    # Set plot title and legend
-    plt.title('Street Network with Paths \n Start: ' + start_address + '\n Destination:' + end_address)
-    plt.legend()
-
-    plt.show()
-
-    plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/map_with_both_paths_originalLine.png')
+    # Save the map as an HTML file
+    mymap.save('/Users/kunsang/Desktop/5800algorithm/final/map_with_both_paths_originalMap.html')
 
 # Main function
 def main():
-    start_address = "1300 17th Street North, Arlington, Virginia"
-    end_address = "AMC, Arlington, Virginia"
-    location = "Arlington, Virginia"
+    # start_address = "1300 17th Street North, Arlington, Virginia"
+    # end_address = "AMC, Arlington, Virginia"
+    # location = "Arlington, Virginia"
+
+    start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
+    end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
+    location = "California"
+    # will be checking 100,000 miles from current location - no need for location variable 
+    # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    run_pathfinding(start_address, end_address, start_address)
 
     # long_running_operation(progress)
 
-    run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, location)
 
 # Run the main function
 if __name__ == "__main__":

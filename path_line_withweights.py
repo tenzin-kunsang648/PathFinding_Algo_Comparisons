@@ -15,6 +15,11 @@ def get_street_network(location):
     G = ox.graph_from_place(location, network_type="drive")
     return G
 
+# Function to retrieve street network data from OpenStreetMap using graph_from_address and distance from it (in meters) instead of a particular location
+def get_street_network_from_address(address):
+    G = ox.graph_from_address(address, dist=100000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
+    return G
+
 # Function to find the nearest network node
 def nearest_node(graph, coordinates):
     return ox.distance.nearest_nodes(graph, coordinates[1], coordinates[0])
@@ -217,7 +222,9 @@ def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time
 
 # Function to execute pathfinding and comparison
 def execute_pathfinding(location, start_address, end_address):
-    street_graph = get_street_network(location)
+    # street_graph = get_street_network(location)
+    street_graph = get_street_network_from_address(location)
+
     start_node = nearest_node(street_graph, ox.geocode(start_address))
     end_node = nearest_node(street_graph, ox.geocode(end_address))
 
@@ -277,12 +284,28 @@ if __name__ == "__main__":
     # major, minor, micro = sys.version_info[:3]
     # print(f"Your Python version is {major}.{minor}.{micro}")
 
-    # start_address = "New York, NY"
-    # end_address = "Washington, DC"
-    # location = "New York, NY"
+    # start_address = "1300 17th Street North, Arlington, Virginia"
+    # end_address = "AMC, Arlington, Virginia"
+    # location = "Arlington, Virginia"
 
-    start_address = "1300 17th Street North, Arlington, Virginia"
-    end_address = "AMC, Arlington, Virginia"
-    location = "Arlington, Virginia"
+    # start_address = "252 First Ave Loop, New York, NY 10009"
+    # end_address = "881 7th Ave, New York, NY 10019"
+    # location = "Manhattan, New York, NY"
 
-    execute_pathfinding(location, start_address, end_address)
+    # start_address = "99 Margaret Corbin Dr, New York, NY 10040"
+    # end_address = "11 Wall St, New York, NY 10005"
+    # location = "Manhattan, New York, NY"
+
+    # start_address = "200 Santa Monica Pier, Santa Monica, CA 90401"
+    # end_address = "6100 Sepulveda Blvd, Los Angeles, CA 91411"
+    # location = "Los Angeles, CA"
+
+    start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
+    end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
+    location = "California"
+    # will be checking 100,000 miles from current location - no need for location variable 
+    # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    execute_pathfinding(start_address, start_address, end_address)
+
+    # execute_pathfinding(location, start_address, end_address)

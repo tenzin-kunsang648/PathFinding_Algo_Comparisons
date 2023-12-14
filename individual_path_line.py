@@ -14,6 +14,10 @@ def get_street_network(location):
     G = ox.graph_from_place(location, network_type="drive")
     return G
 
+def get_street_network_from_address(address):
+    G = ox.graph_from_address(address, dist=100000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
+    return G
+
 # Function to find the nearest network node
 def nearest_node(graph, coordinates):
     return ox.distance.nearest_nodes(graph, coordinates[1], coordinates[0])
@@ -118,9 +122,11 @@ def run_astar(graph, start_node, end_node):
     runtime = end_time - start_time
 
     if route_astar:
+        print('IN IF')
         distance, traveltime, avgspeed = calculate_path_distance_time(graph, route_astar)
     else:
-        distance, traveltime = 0, 0
+        print('IN ELSE')
+        distance, traveltime, avgspeed = 0, 0, 0
 
     return route_astar, runtime, distance, traveltime, avgspeed
 
@@ -134,8 +140,7 @@ def run_dijkstra(graph, start_node, end_node):
     if route_dijkstra:
         distance, traveltime, avgspeed = calculate_path_distance_time(graph, route_dijkstra)
     else:
-        distance = 0
-        traveltime = 0
+        distance, traveltime, avgspeed = 0, 0, 0
 
     return route_dijkstra, runtime, distance, traveltime, avgspeed
 
@@ -173,11 +178,13 @@ def calculate_path_distance_time(graph, path):
 def print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed):
     # Print coordinates of A* path
     print("\nA* Path Coordinates:")
-    print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
+    if(astar_path):
+        print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
 
     # Print coordinates of Dijkstra's path
     print("\nDijkstra's Path Coordinates:")
-    print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
+    if(dijkstra_path):
+        print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
 
     # Print start and end coordinates
     print("\nStart Coordinates:", start_node)
@@ -221,6 +228,7 @@ def progress(percent):
 def run_pathfinding(start_address, end_address, location):
 
     street_graph = get_street_network(location)
+    # street_graph = get_street_network_from_address(location)
 
     # Convert the addresses to the nearest nodes in the network
     start_node = nearest_node(street_graph, ox.geocode(start_address))
@@ -271,18 +279,39 @@ def run_pathfinding(start_address, end_address, location):
     # Display the plot
     plt.show()
 
-    Save the plot
-    plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/visualMaps/bothPaths_lineMap.png', facecolor=fig.get_facecolor())
+    # Save the plot
+    # plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/visualMaps/bothPaths_lineMap.png', facecolor=fig.get_facecolor())
 
 
 
 # Main function
 def main():
-    start_address = "1300 17th Street North, Arlington, Virginia"
-    end_address = "AMC, Arlington, Virginia"
-    location = "Arlington, Virginia"
+    # start_address = "1300 17th Street North, Arlington, Virginia"
+    # end_address = "AMC, Arlington, Virginia"
+    # location = "Arlington, Virginia"
 
-    long_running_operation(progress)
+    # start_address = "252 First Ave Loop, New York, NY 10009"
+    # end_address = "881 7th Ave, New York, NY 10019"
+    # location = "Manhattan, New York, NY"
+
+    # start_address = "99 Margaret Corbin Dr, New York, NY 10040"
+    # end_address = "11 Wall St, New York, NY 10005"
+    # location = "Manhattan, New York, NY"
+
+    # start_address = "200 Santa Monica Pier, Santa Monica, CA 90401"
+    # end_address = "6100 Sepulveda Blvd, Los Angeles, CA 91411"
+    # location = "Los Angeles, CA"
+
+    # start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
+    # end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
+    # location = "California"
+    # # will be checking 100,000 miles from current location - no need for location variable 
+    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, start_address)
+
+
+    # long_running_operation(progress)
 
     run_pathfinding(start_address, end_address, location)
 
