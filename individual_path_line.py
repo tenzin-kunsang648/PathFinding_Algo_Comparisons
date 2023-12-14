@@ -4,10 +4,12 @@ import networkx as nx
 import heapq
 import time
 import geopandas as gpd
+import pandas as pd
 import matplotlib.pyplot as plt
 from shapely.geometry import Point, LineString
 import logging
 from osmnx import utils_geo
+from collections import Counter
 
 # Function to retrieve street network data from OpenStreetMap
 def get_street_network(location):
@@ -15,7 +17,18 @@ def get_street_network(location):
     return G
 
 def get_street_network_from_address(address):
-    G = ox.graph_from_address(address, dist=100000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
+    G = ox.graph_from_address(address, dist=20000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
+    return G
+
+def get_street_network_from_bbox(north, south, east, west):
+    """
+    Get the street network within a bounding box.
+
+    Parameters:
+    north, south, east, west: coordinates defining the bounding box
+    """
+    # Download the street network data
+    G = ox.graph_from_bbox(north, south, east, west)
     return G
 
 # Function to find the nearest network node
@@ -177,43 +190,32 @@ def calculate_path_distance_time(graph, path):
 # Function to print all
 def print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed):
     # Print coordinates of A* path
-    print("\nA* Path Coordinates:")
-    if(astar_path):
-        print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
+    # print("\nA* Path Coordinates:")
+    # if(astar_path):
+    #     print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in astar_path])
 
-    # Print coordinates of Dijkstra's path
-    print("\nDijkstra's Path Coordinates:")
-    if(dijkstra_path):
-        print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
+    # # Print coordinates of Dijkstra's path
+    # print("\nDijkstra's Path Coordinates:")
+    # if(dijkstra_path):
+    #     print([(street_graph.nodes[node]['y'], street_graph.nodes[node]['x']) for node in dijkstra_path])
 
-    # Print start and end coordinates
-    print("\nStart Coordinates:", start_node)
-    print("End Coordinates:", end_node)
+    # # Print start and end coordinates
+    # print("\nStart Coordinates:", start_node)
+    # print("End Coordinates:", end_node)
 
-    # Print A* algorithm runtime
-    print(f"\nA* Algorithm Runtime: {astar_runtime:.4f} seconds")
+    print(
+    f"\nA* Algorithm Runtime: {astar_runtime:.4f} seconds\n"
+    f"A* Travel Distance: {astar_traveldistance:.4f} miles\n"
+    f"A* Travel Time: {astar_traveltime:.4f} minutes\n"
+    f"A* Travel Speed: {astar_avgspeed:.4f} mph"
+    )
 
-    # Print Dijkstra's algorithm runtime
-    print(f"\nDijkstra's Algorithm Runtime: {dijkstra_runtime:.4f} seconds")
-
-    # Print A* algorithm travel distance
-    print(f"\nA* Travel Distance: {astar_traveldistance:.4f} miles")
-
-    # Print Dijkstra's travel distance
-    print(f"\nDijkstra's Travel Distance: {dijkstra_traveldistance:.4f} miles")
-
-    # Print A* algorithm travel time
-    print(f"\nA* Travel Time: {astar_traveltime:.4f} minutes")
-
-    # Print Dijkstra's travel time
-    print(f"\nDijkstra's Travel Time: {dijkstra_traveltime:.4f} minutes")
-
-    # Print A* algorithm travel speed
-    print(f"\nA* Travel Speed: {astar_avgspeed:.4f} mph")
-
-    # Print Dijkstra's travel speed
-    print(f"\nDijkstra's Travel Speed: {dijkstra_avgspeed:.4f} mph")
-
+    print(
+        f"\nDijkstra's Algorithm Runtime: {dijkstra_runtime:.4f} seconds\n"
+        f"Dijkstra's Travel Distance: {dijkstra_traveldistance:.4f} miles\n"
+        f"Dijkstra's Travel Time: {dijkstra_traveltime:.4f} minutes\n"
+        f"Dijkstra's Travel Speed: {dijkstra_avgspeed:.4f} mph"
+    )
 
 def long_running_operation(callback=None):
     for i in range(100):
@@ -224,11 +226,88 @@ def long_running_operation(callback=None):
 def progress(percent):
     print(f"Progress: {percent}%")
 
+def plot_highway_types(graph, path, algo):
+    """
+    Plot a bar chart of the counts of different types of highways in the path.
+
+    Parameters:
+    graph: The graph object from which edge data is extracted.
+    path: The list of nodes representing the optimal path.
+    """
+    highway_types = []
+
+    # Iterate over the path to get consecutive pairs of nodes
+    for i in range(len(path) - 1):
+        u, v = path[i], path[i + 1]
+        edge_data = graph.get_edge_data(u, v)
+        
+        # Extract highway type; it can be a list or a single value
+        highway = edge_data[0].get('highway', 'unknown')
+        if isinstance(highway, list):
+            highway_types.extend(highway)  # Add all types if it's a list
+        else:
+            highway_types.append(highway)  # Add the single type
+
+    # Count the occurrences of each highway type
+    highway_counts = Counter(highway_types)
+
+    # Create a bar chart
+    plt.figure(figsize=(10, 6))
+    plt.bar(highway_counts.keys(), highway_counts.values(), color='skyblue')
+    plt.xlabel('Highway Types')
+    plt.ylabel('Count')
+    plt.title('Counts of Different Types of Roads in the ' + algo + ' Algorithm\'s Path')
+    plt.xticks(rotation=45)
+    plt.show()
+
+def display_highway_types_table(graph, astar_path, dijkstra_path):
+    """
+    Display a table of the counts of different types of highways in both paths.
+
+    Parameters:
+    graph: The graph object from which edge data is extracted.
+    astar_path: The list of nodes representing the optimal path from A* algorithm.
+    dijkstra_path: The list of nodes representing the optimal path from Dijkstra's algorithm.
+    """
+
+    def get_highway_counts(path):
+        highway_types = []
+
+        # Iterate over the path to get consecutive pairs of nodes
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            edge_data = graph.get_edge_data(u, v)
+
+            # Extract highway type; it can be a list or a single value
+            highway = edge_data[0].get('highway', 'unknown')
+            if isinstance(highway, list):
+                highway_types.extend(highway)  # Add all types if it's a list
+            else:
+                highway_types.append(highway)  # Add the single type
+
+        return Counter(highway_types)
+
+    # Get highway counts for both paths
+    astar_counts = get_highway_counts(astar_path)
+    dijkstra_counts = get_highway_counts(dijkstra_path)
+
+    # Create DataFrames from the counts
+    df_astar = pd.DataFrame(astar_counts.items(), columns=['Highway Type', 'Count A*'])
+    df_dijkstra = pd.DataFrame(dijkstra_counts.items(), columns=['Highway Type', 'Count Dijkstra'])
+
+    # Merge the DataFrames on 'Highway Type'
+    df = pd.merge(df_dijkstra, df_astar, on='Highway Type', how='outer').fillna(0)
+
+    # Display the table
+    print('Comparison of Different Types of Roads in A* and Dijkstra\'s Paths')
+    print(df)
+
 # Function to run the pathfinding process
 def run_pathfinding(start_address, end_address, location):
 
-    street_graph = get_street_network(location)
+    # street_graph = get_street_network(location)
     # street_graph = get_street_network_from_address(location)
+    street_graph = get_street_network_from_bbox(location[0], location[1], location[2], location[3])
 
     # Convert the addresses to the nearest nodes in the network
     start_node = nearest_node(street_graph, ox.geocode(start_address))
@@ -236,9 +315,20 @@ def run_pathfinding(start_address, end_address, location):
 
     # Run A* algorithm and measure runtime
     astar_path, astar_runtime, astar_traveldistance, astar_traveltime, astar_avgspeed = run_astar(street_graph, start_node, end_node)
+    # Plot a bar chart of all the types of road in the optimal astar path
+    # plot_highway_types(street_graph, astar_path, "A*")
+    # Tabular form of all the types of roads in the optimal astar path
+    # display_highway_types_table(street_graph, astar_path, "A*")
 
     # Run Dijkstra's algorithm and measure runtime
     dijkstra_path, dijkstra_runtime, dijkstra_traveldistance, dijkstra_traveltime, dijkstra_avgspeed = run_dijkstra(street_graph, start_node, end_node)
+    # Plot a bar chart of all the types of highway in the optimal Dijkstra path
+    # plot_highway_types(street_graph, dijkstra_path, "Dijkstra")
+    # Tabular form of all the types of raods in the optimal Dijkstra path
+    # display_highway_types_table(street_graph, dijkstra_path, "Dijkstra")
+
+    display_highway_types_table(street_graph, astar_path, dijkstra_path)
+
 
     # Print all
     print_all(street_graph, astar_path, dijkstra_path, start_node, end_node, astar_runtime, dijkstra_runtime, astar_traveltime, dijkstra_traveltime, astar_traveldistance, dijkstra_traveldistance, astar_avgspeed, dijkstra_avgspeed)
@@ -308,8 +398,32 @@ def main():
     # # will be checking 100,000 miles from current location - no need for location variable 
     # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
     # # also comment out this line when running run_pathfinding(start_address, end_address, location)
-    # run_pathfinding(start_address, end_address, start_address)
+    # run_pathfinding(start_address, end_address, start_address) #100000 meters
 
+    # start_address = "Groom, TX 79039"
+    # end_address = "Estelline, TX 79233"
+    # location = "Texas"
+    # # will be checking 100,000 miles from current location - no need for location variable 
+    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, start_address) #100000 meters
+
+    # start_address = "1300 17th St N, Arlington, VA 22209"
+    # end_address = "Adams Morgan, Washington, DC"
+    # location = "DMV Area"
+    # run_pathfinding(start_address, end_address, start_address) # 20000 meters 
+
+    # start_address = "Beckley, West Virginia 25801"
+    # end_address = "Coal City, West Virginia"
+    # location = [37.78, 37.67, -81.18, -81.22] # north, south, east, west
+
+    # start_address = "3030 Holmes Ave, Minneapolis, MN"
+    # end_address = "119 N 4th St, Minneapolis, MN 55401"
+    # location = [44.99, 44.93, -93.26, -93.30] # north, south, east, west
+
+    start_address = "6008 Stallion Chase Ct, Fairfax, VA 22030"
+    end_address = "1300 17th St N, Arlington, VA 22209"
+    location = [38.9136462, 38.7979889, -77.0525402, -77.3865756] # north, south, east, west
 
     # long_running_operation(progress)
 

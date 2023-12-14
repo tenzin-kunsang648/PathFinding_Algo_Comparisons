@@ -20,6 +20,17 @@ def get_street_network_from_address(address):
     G = ox.graph_from_address(address, dist=100000, dist_type='bbox', network_type='drive', simplify=True, retain_all=False, truncate_by_edge=False, return_coords=False, clean_periphery=None, custom_filter=None)
     return G
 
+def get_street_network_from_bbox(north, south, east, west):
+    """
+    Get the street network within a bounding box.
+
+    Parameters:
+    north, south, east, west: coordinates defining the bounding box
+    """
+    # Download the street network data
+    G = ox.graph_from_bbox(north, south, east, west)
+    return G
+
 # Function to find the nearest network node
 def nearest_node(graph, coordinates):
     return ox.distance.nearest_nodes(graph, coordinates[1], coordinates[0])
@@ -210,6 +221,48 @@ def calculate_path_distance_time(graph, path):
 
     return total_distance_miles, total_time, avg_speed
 
+def display_highway_types_table(graph, astar_path, dijkstra_path):
+    """
+    Display a table of the counts of different types of highways in both paths.
+
+    Parameters:
+    graph: The graph object from which edge data is extracted.
+    astar_path: The list of nodes representing the optimal path from A* algorithm.
+    dijkstra_path: The list of nodes representing the optimal path from Dijkstra's algorithm.
+    """
+
+    def get_highway_counts(path):
+        highway_types = []
+
+        # Iterate over the path to get consecutive pairs of nodes
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            edge_data = graph.get_edge_data(u, v)
+
+            # Extract highway type; it can be a list or a single value
+            highway = edge_data[0].get('highway', 'unknown')
+            if isinstance(highway, list):
+                highway_types.extend(highway)  # Add all types if it's a list
+            else:
+                highway_types.append(highway)  # Add the single type
+
+        return Counter(highway_types)
+
+    # Get highway counts for both paths
+    astar_counts = get_highway_counts(astar_path)
+    dijkstra_counts = get_highway_counts(dijkstra_path)
+
+    # Create DataFrames from the counts
+    df_astar = pd.DataFrame(astar_counts.items(), columns=['Highway Type', 'Count A*'])
+    df_dijkstra = pd.DataFrame(dijkstra_counts.items(), columns=['Highway Type', 'Count Dijkstra'])
+
+    # Merge the DataFrames on 'Highway Type'
+    df = pd.merge(df_dijkstra, df_astar, on='Highway Type', how='outer').fillna(0)
+
+    # Display the table
+    print('Comparison of Different Types of Roads in A* and Dijkstra\'s Paths')
+    print(df)
+    
 # Function to compare algorithms
 def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time):
     astar_result = run_astar(graph, start_node, end_node, weight_distance, weight_time)
@@ -222,8 +275,10 @@ def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time
 
 # Function to execute pathfinding and comparison
 def execute_pathfinding(location, start_address, end_address):
+
     # street_graph = get_street_network(location)
-    street_graph = get_street_network_from_address(location)
+    # street_graph = get_street_network_from_address(location)
+    street_graph = get_street_network_from_bbox(location[0], location[1], location[2], location[3])
 
     start_node = nearest_node(street_graph, ox.geocode(start_address))
     end_node = nearest_node(street_graph, ox.geocode(end_address))
@@ -275,8 +330,6 @@ def execute_pathfinding(location, start_address, end_address):
         # Save the plot
         # plt.savefig('/Users/kunsang/Desktop/5800algorithm/final/visualMaps/bothPaths_lineMap.png', facecolor=fig.get_facecolor())
 
-    
-
 # Run the main execution
 if __name__ == "__main__":
 
@@ -300,12 +353,37 @@ if __name__ == "__main__":
     # end_address = "6100 Sepulveda Blvd, Los Angeles, CA 91411"
     # location = "Los Angeles, CA"
 
-    start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
-    end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
-    location = "California"
-    # will be checking 100,000 miles from current location - no need for location variable 
-    # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
-    # also comment out this line when running run_pathfinding(start_address, end_address, location)
-    execute_pathfinding(start_address, start_address, end_address)
+    # start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
+    # end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
+    # location = "California"
+    # # will be checking 100,000 miles from current location - no need for location variable 
+    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, start_address) #100000 meters
 
-    # execute_pathfinding(location, start_address, end_address)
+    # start_address = "Groom, TX 79039"
+    # end_address = "Estelline, TX 79233"
+    # location = "Texas"
+    # # will be checking 100,000 miles from current location - no need for location variable 
+    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, start_address) #100000 meters
+
+    # start_address = "1300 17th St N, Arlington, VA 22209"
+    # end_address = "Adams Morgan, Washington, DC"
+    # location = "DMV Area"
+    # run_pathfinding(start_address, end_address, start_address) # 20000 meters 
+
+    # start_address = "Beckley, West Virginia 25801"
+    # end_address = "Coal City, West Virginia"
+    # location = [37.78, 37.67, -81.18, -81.22] # north, south, east, west
+
+    # start_address = "3030 Holmes Ave, Minneapolis, MN"
+    # end_address = "119 N 4th St, Minneapolis, MN 55401"
+    # location = [44.99, 44.93, -93.26, -93.30] # north, south, east, west
+
+    start_address = "Fairfax Hunt, 6008 Stallion Chase Ct, Fairfax, VA 22030"
+    end_address = "1300 17th St N, Arlington, VA 22209"
+    location = [38.9136462, 38.7979889, -77.0525402, -77.3865756] # north, south, east, west
+
+    execute_pathfinding(location, start_address, end_address)
