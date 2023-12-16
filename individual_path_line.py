@@ -135,10 +135,8 @@ def run_astar(graph, start_node, end_node):
     runtime = end_time - start_time
 
     if route_astar:
-        print('IN IF')
         distance, traveltime, avgspeed = calculate_path_distance_time(graph, route_astar)
     else:
-        print('IN ELSE')
         distance, traveltime, avgspeed = 0, 0, 0
 
     return route_astar, runtime, distance, traveltime, avgspeed
@@ -395,9 +393,9 @@ def main():
     # start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
     # end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
     # location = "California"
-    # # will be checking 100,000 miles from current location - no need for location variable 
-    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
-    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # will be checking 100,000 miles from current location - no need for location variable 
+    # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # also comment out this line when running run_pathfinding(start_address, end_address, location)
     # run_pathfinding(start_address, end_address, start_address) #100000 meters
 
     # start_address = "Groom, TX 79039"
@@ -411,7 +409,7 @@ def main():
     # start_address = "1300 17th St N, Arlington, VA 22209"
     # end_address = "Adams Morgan, Washington, DC"
     # location = "DMV Area"
-    # run_pathfinding(start_address, end_address, start_address) # 20000 meters 
+    # # run_pathfinding(start_address, end_address, start_address) # 20000 meters 
 
     # start_address = "Beckley, West Virginia 25801"
     # end_address = "Coal City, West Virginia"
@@ -427,7 +425,11 @@ def main():
 
     # long_running_operation(progress)
 
+    print("STARTING LOCATION : " + start_address)
+    print("DESTINATION LOCATION : " + end_address)
+
     run_pathfinding(start_address, end_address, location)
+    # run_pathfinding(start_address, end_address, start_address) #100000 meters
 
 # Run the main function
 if __name__ == "__main__":

@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point, LineString
 import logging
 import sys
-
+import pandas as pd
+from collections import Counter
 
 # Function to retrieve street network data from OpenStreetMap
 def get_street_network(location):
@@ -95,7 +96,7 @@ def astar(graph, start, end, weight_distance, weight_time):
                 max_speed = edge_data.get('maxspeed', '45 mph')
                 if isinstance(max_speed, list):
                     max_speed = max_speed[0]
-                max_speed_int = int(max_speed.split()[0])
+                max_speed_int = int(float(max_speed.split()[0]))
                 f_score[neighbor] = tentative_g_score + heuristic_cost_estimate(graph, neighbor, end, weight_distance, weight_time, max_speed_int)
                 heapq.heappush(open_set, (f_score[neighbor], neighbor))
     return None
@@ -143,7 +144,7 @@ def dijkstra(graph, start, end, time_weight, distance_weight):
             max_speed = edge_data.get('maxspeed', '45 mph')
             if isinstance(max_speed, list):
                 max_speed = max_speed[0]
-            max_speed_int = int(max_speed.split()[0])
+            max_speed_int = int(float(max_speed.split()[0]))
 
             # Calculate time from distance and speed
             time_cost = distance_cost / max_speed_int
@@ -242,7 +243,7 @@ def display_highway_types_table(graph, astar_path, dijkstra_path):
             # Extract highway type; it can be a list or a single value
             highway = edge_data[0].get('highway', 'unknown')
             if isinstance(highway, list):
-                highway_types.extend(highway)  # Add all types if it's a list
+                highway_types.append(highway)  # Add all types if it's a list
             else:
                 highway_types.append(highway)  # Add the single type
 
@@ -262,7 +263,7 @@ def display_highway_types_table(graph, astar_path, dijkstra_path):
     # Display the table
     print('Comparison of Different Types of Roads in A* and Dijkstra\'s Paths')
     print(df)
-    
+
 # Function to compare algorithms
 def compare_algorithms(graph, start_node, end_node, weight_distance, weight_time):
     astar_result = run_astar(graph, start_node, end_node, weight_distance, weight_time)
@@ -289,6 +290,9 @@ def execute_pathfinding(location, start_address, end_address):
     for weight_distance, weight_time in weights:
         print(f"Comparing algorithms with weights - Distance: {weight_distance}, Time: {weight_time}")
         astar_path, dijkstra_path, astar_runtime, dijkstra_runtime = compare_algorithms(street_graph, start_node, end_node, weight_distance, weight_time)
+
+        # Print road types for A* and Dijkstra's optimal paths
+        # display_highway_types_table(street_graph, astar_path, dijkstra_path)
 
         # Plot the street network using GeoPandas
         gdf_edges = ox.graph_to_gdfs(street_graph, nodes=False, edges=True)
@@ -356,10 +360,10 @@ if __name__ == "__main__":
     # start_address = "20601 Bohemian Ave, Monte Rio, CA 95462"
     # end_address = "18000 Old Winery Rd, Sonoma, CA 95476"
     # location = "California"
-    # # will be checking 100,000 miles from current location - no need for location variable 
-    # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
-    # # also comment out this line when running run_pathfinding(start_address, end_address, location)
-    # run_pathfinding(start_address, end_address, start_address) #100000 meters
+    # will be checking 100,000 miles from current location - no need for location variable 
+    # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
+    # also comment out this line when running run_pathfinding(start_address, end_address, location)
+    # execute_pathfinding(start_address, end_address, start_address) #100000 meters
 
     # start_address = "Groom, TX 79039"
     # end_address = "Estelline, TX 79233"
@@ -367,12 +371,12 @@ if __name__ == "__main__":
     # # will be checking 100,000 miles from current location - no need for location variable 
     # # need to use get_street_network_from_address in run_pathfinding instead of get_street_network
     # # also comment out this line when running run_pathfinding(start_address, end_address, location)
-    # run_pathfinding(start_address, end_address, start_address) #100000 meters
+    # execute_pathfinding(start_address, end_address, start_address) #100000 meters
 
     # start_address = "1300 17th St N, Arlington, VA 22209"
     # end_address = "Adams Morgan, Washington, DC"
     # location = "DMV Area"
-    # run_pathfinding(start_address, end_address, start_address) # 20000 meters 
+    # # execute_pathfinding(start_address, end_address, start_address) # 20000 meters 
 
     # start_address = "Beckley, West Virginia 25801"
     # end_address = "Coal City, West Virginia"
@@ -382,8 +386,12 @@ if __name__ == "__main__":
     # end_address = "119 N 4th St, Minneapolis, MN 55401"
     # location = [44.99, 44.93, -93.26, -93.30] # north, south, east, west
 
-    start_address = "Fairfax Hunt, 6008 Stallion Chase Ct, Fairfax, VA 22030"
+    start_address = "6008 Stallion Chase Ct, Fairfax, VA 22030"
     end_address = "1300 17th St N, Arlington, VA 22209"
-    location = [38.9136462, 38.7979889, -77.0525402, -77.3865756] # north, south, east, west
+    location = [38.9136462, 38.7979889, -77.0525402, -77.8065756] # north, south, east, west
 
+    print("STARTING LOCATION : " + start_address)
+    print("DESTINATION LOCATION : " + end_address)
+
+    # execute_pathfinding(start_address, end_address, start_address) 
     execute_pathfinding(location, start_address, end_address)
